@@ -63,6 +63,8 @@ The backend now builds a personalized AI context from:
 - latest posts
 - recent chat history
 
+The AI is configured to answer broader user questions too, not only narrow eco prompts. With `OPENAI_API_KEY` enabled, the chat behaves much closer to a general assistant and uses the user context as personalization, not as a rigid template.
+
 OpenAI settings are read from `.env`:
 
 - `OPENAI_API_KEY`
@@ -70,8 +72,9 @@ OpenAI settings are read from `.env`:
 - `OPENAI_TIMEOUT_SECONDS`
 - `OPENAI_TEMPERATURE`
 - `OPENAI_MAX_TOKENS`
+- `OPENAI_HISTORY_LIMIT`
 
-If `OPENAI_API_KEY` is empty, the backend falls back to local rule-based replies.
+Important: if `OPENAI_API_KEY` is empty, the backend falls back to local rule-based replies, so the chat will still feel more limited and more template-like than real OpenAI responses.
 
 ## iOS client
 
