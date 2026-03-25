@@ -9,42 +9,55 @@ from app.models.user import User
 
 
 DEFAULT_SYSTEM_PROMPT = """
-Ты EcoIZ AI, умный и дружелюбный ассистент внутри мобильного приложения EcoIZ.
+Ты EcoIZ AI, умный помощник внутри мобильного приложения EcoIZ.
 
-Ты должен отвечать как современный качественный AI-ассистент уровня ChatGPT:
-- понимать любые вопросы пользователя, а не только про экологию;
-- отвечать по-русски, естественно, внятно и по-человечески;
-- быть полезным, конкретным и поддерживающим;
-- помнить, что ты находишься внутри eco-приложения, поэтому, когда уместно, можешь мягко связывать советы с привычками, мотивацией, устойчивым образом жизни и личным прогрессом пользователя;
-- не сводить каждый ответ к шаблонным eco-советам, если вопрос пользователя про другое;
-- если пользователь просит объяснение, объясняй понятно;
-- если пользователь просит план, давай план;
-- если пользователь растерян, сначала поддержи, потом предложи следующий шаг;
-- если вопрос личный, бытовой, учебный или общий, отвечай как обычный умный ассистент, а не как узкий бот;
-- не выдумывай факты о пользователе, используй только тот контекст, который передан системой.
+Твоя задача:
+- отвечать пользователю коротко, ясно и по факту;
+- понимать обычные вопросы пользователя, а не только вопросы про экологию;
+- если вопрос про экопривычки, мотивацию, день, цели или повседневные решения, помогать практично;
+- если вопрос общий, отвечать как нормальный полезный ассистент;
+- использовать контекст пользователя только когда он реально помогает ответу.
+
+Правила ответа:
+- отвечай только на русском языке;
+- не выдумывай факты;
+- не повторяй шаблонные eco-фразы без причины;
+- не уходи в длинные рассуждения;
+- не пиши слишком формально;
+- если ответа точно не знаешь, честно скажи об этом и дай осторожный полезный ориентир;
+- если вопрос широкий, сначала дай прямой ответ, потом 1-3 коротких шага;
+- если пользователь спрашивает "что делать", дай конкретные действия;
+- если пользовательу нужна поддержка, поддержи спокойно, но без лишней воды.
+
+Стиль:
+- коротко;
+- понятно;
+- по делу;
+- дружелюбно;
+- без канцелярита.
 
 Формат:
-- обычно 1 короткий абзац или 2-5 предложений;
-- если полезно, давай список из 2-4 шагов;
-- избегай однотипных повторов и одних и тех же фраз.
+- обычно 1-4 предложения;
+- при необходимости короткий список из 2-3 пунктов;
+- никаких длинных вступлений.
 """.strip()
 
 
 def _fallback_response(text: str) -> str:
     lowercase = text.lower()
     if any(word in lowercase for word in ("привет", "здрав", "hello", "hi")):
-        return "Привет. Я рядом и могу помочь с любым вопросом: от экопривычек и мотивации до повседневных решений и планов."
+        return "Привет. Могу помочь коротко и по делу: с экопривычками, планом на день или обычными вопросами."
     if "что делать сегодня" in lowercase or "что мне делать сегодня" in lowercase:
-        return "На сегодня выбери 3 простых шага: короткий душ, отказаться от одноразового пакета и выключить лишний свет вечером. Это реалистично и поможет сохранить ритм."
+        return "На сегодня начни с трех простых шагов: короткий душ, многоразовая сумка и выключать лишний свет. Это легко выполнить за один день."
     if "вод" in lowercase:
-        return "Попробуй 5-минутный душ и проверь, нет ли протечек. Это дает стабильный эффект каждый день."
+        return "Начни с двух вещей: 5-минутный душ и не оставляй воду включенной без надобности. Это самые простые и заметные шаги."
     if "транспорт" in lowercase or "машин" in lowercase:
-        return "2-3 поездки в неделю на метро, автобусе или велосипеде уже заметно снижают личный след CO2."
+        return "Если можешь, замени хотя бы 2-3 поездки в неделю на метро, автобус или пешую ходьбу. Это уже даст заметный эффект."
     if "мотивац" in lowercase or "сложно" in lowercase:
-        return "Сфокусируйся на серии: одно небольшое действие в день лучше, чем идеальный, но редкий рывок."
+        return "Не пытайся менять всё сразу. Выбери одно маленькое действие на сегодня и держи регулярность."
     if any(word in lowercase for word in ("как", "почему", "зачем", "что")):
-        return "Могу помочь с этим. Если говорить коротко, начни с самого простого практического шага, который можно сделать сегодня, и потом постепенно усложняй."
-    return "Я могу помочь с вопросами про привычки, мотивацию, планы на день и повседневные решения. Напиши чуть подробнее, и я отвечу точнее."
+        return "Если коротко: начни с самого простого практического шага, который можно сделать сегодня. Если хочешь, уточни вопрос, и я отвечу точнее."
+    return "Напиши вопрос чуть точнее, и я отвечу коротко и по делу."
 
 
 def _fmt_dt(value: datetime) -> str:
@@ -150,29 +163,70 @@ def _conversation_messages(user: User, text: str, history_limit: int) -> list[di
     return messages
 
 
-def ai_response(text: str, user: User) -> str:
+def _openrouter_response(messages: list[dict[str, str]]) -> str | None:
+    settings = get_settings()
+    if not settings.openrouter_api_key:
+        return None
+
+    response = httpx.post(
+        "https://openrouter.ai/api/v1/chat/completions",
+        headers={
+            "Authorization": f"Bearer {settings.openrouter_api_key}",
+            "Content-Type": "application/json",
+        },
+        json={
+            "model": settings.openrouter_model,
+            "messages": messages,
+            "temperature": settings.ai_temperature,
+            "max_tokens": settings.ai_max_tokens,
+        },
+        timeout=settings.ai_timeout_seconds,
+    )
+    response.raise_for_status()
+    payload = response.json()
+    content = payload["choices"][0]["message"]["content"].strip()
+    return content or None
+
+
+def _openai_response(messages: list[dict[str, str]]) -> str | None:
     settings = get_settings()
     if not settings.openai_api_key:
+        return None
+
+    response = httpx.post(
+        "https://api.openai.com/v1/chat/completions",
+        headers={
+            "Authorization": f"Bearer {settings.openai_api_key}",
+            "Content-Type": "application/json",
+        },
+        json={
+            "model": settings.openai_model,
+            "messages": messages,
+            "temperature": settings.ai_temperature,
+            "max_tokens": settings.ai_max_tokens,
+        },
+        timeout=settings.ai_timeout_seconds,
+    )
+    response.raise_for_status()
+    payload = response.json()
+    content = payload["choices"][0]["message"]["content"].strip()
+    return content or None
+
+
+def ai_response(text: str, user: User) -> str:
+    settings = get_settings()
+    messages = _conversation_messages(user, text, settings.ai_history_limit)
+
+    if settings.ai_provider == "openrouter" and not settings.openrouter_api_key:
+        return _fallback_response(text)
+    if settings.ai_provider == "openai" and not settings.openai_api_key:
         return _fallback_response(text)
 
     try:
-        response = httpx.post(
-            "https://api.openai.com/v1/chat/completions",
-            headers={
-                "Authorization": f"Bearer {settings.openai_api_key}",
-                "Content-Type": "application/json",
-            },
-            json={
-                "model": settings.openai_model,
-                "messages": _conversation_messages(user, text, settings.openai_history_limit),
-                "temperature": settings.openai_temperature,
-                "max_tokens": settings.openai_max_tokens,
-            },
-            timeout=settings.openai_timeout_seconds,
-        )
-        response.raise_for_status()
-        payload = response.json()
-        content = payload["choices"][0]["message"]["content"].strip()
+        if settings.ai_provider == "openai":
+            content = _openai_response(messages)
+        else:
+            content = _openrouter_response(messages)
         return content or _fallback_response(text)
     except Exception:
         return _fallback_response(text)

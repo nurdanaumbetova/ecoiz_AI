@@ -8,12 +8,15 @@ class Settings(BaseSettings):
     ecoiz_api_host: str = "127.0.0.1"
     ecoiz_api_port: int = 8000
     ecoiz_cors_origins: str = "*"
+    ai_provider: str = "openrouter"
     openai_api_key: str | None = None
     openai_model: str = "gpt-4o-mini"
-    openai_timeout_seconds: float = 12.0
-    openai_temperature: float = 0.6
-    openai_max_tokens: int = 220
-    openai_history_limit: int = 12
+    openrouter_api_key: str | None = None
+    openrouter_model: str = "openrouter/free"
+    ai_timeout_seconds: float = 12.0
+    ai_temperature: float = 0.6
+    ai_max_tokens: int = 220
+    ai_history_limit: int = 12
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 

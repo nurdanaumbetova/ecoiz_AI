@@ -67,14 +67,17 @@ The AI is configured to answer broader user questions too, not only narrow eco p
 
 OpenAI settings are read from `.env`:
 
+- `AI_PROVIDER` (`openrouter` by default, or `openai`)
+- `OPENROUTER_API_KEY`
+- `OPENROUTER_MODEL`
 - `OPENAI_API_KEY`
 - `OPENAI_MODEL`
-- `OPENAI_TIMEOUT_SECONDS`
-- `OPENAI_TEMPERATURE`
-- `OPENAI_MAX_TOKENS`
-- `OPENAI_HISTORY_LIMIT`
+- `AI_TIMEOUT_SECONDS`
+- `AI_TEMPERATURE`
+- `AI_MAX_TOKENS`
+- `AI_HISTORY_LIMIT`
 
-Important: if `OPENAI_API_KEY` is empty, the backend falls back to local rule-based replies, so the chat will still feel more limited and more template-like than real OpenAI responses.
+Important: if the selected provider key is empty, the backend falls back to local rule-based replies, so the chat will still feel more limited and more template-like than a real model response.
 
 ## iOS client
 
